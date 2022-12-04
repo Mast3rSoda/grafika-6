@@ -1,0 +1,38 @@
+﻿<Window x:Class="grafika_6.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:grafika_6"
+        mc:Ignorable="d"
+        Title="Grafika6" Height="450" Width="800">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Save" Click="Save_Click"/>
+                <Separator/>
+                <MenuItem Header="_Load" Click="Load_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Draw">
+                <MenuItem Header="_Bezier" Click="Bezier_Click"/>
+                <Separator />
+                <MenuItem Header="_2D" Click="D_Click"/>
+            </MenuItem>
+        </Menu>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Canvas Grid.Column="0" Name="cnv" MouseUp="cnv_MouseUp" MouseMove="cnv_MouseMove" MouseDown="cnv_MouseDown" Background="White">
+                <TextBlock x:Name="xd"></TextBlock>
+            </Canvas>
+            <StackPanel Grid.Column="1">
+                <Button Name="bezDraw" Content="Draw" Click="bezDraw_Click"/>
+                <Button Name="bezEdit" Content="Edit" Click="bezEdit_Click"/>
+                <Button Name="bezDone" Content="Done" Click="bezDone_Click"/>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>
