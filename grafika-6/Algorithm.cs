@@ -50,5 +50,29 @@ namespace grafika_6
             return bezCurvePoints;
         }
 
+        public static Point RotatePoint(Point pointToRotate, Point centerPoint, double angleInDegrees)
+        {
+            double angleInRadians = angleInDegrees * (Math.PI / 180);
+            double cosTheta = Math.Cos(angleInRadians);
+            double sinTheta = Math.Sin(angleInRadians);
+            return new Point
+            {
+                X =
+                    (int)
+                    (cosTheta * (pointToRotate.X - centerPoint.X) -
+                    sinTheta * (pointToRotate.Y - centerPoint.Y) + centerPoint.X),
+                Y =
+                    (int)
+                    (sinTheta * (pointToRotate.X - centerPoint.X) +
+                    cosTheta * (pointToRotate.Y - centerPoint.Y) + centerPoint.Y)
+            };
+        }
+
+        public static Point ScalePoint(Point pointToScale, Point centerPoint, double k)
+        {
+            Point distance = new Point(pointToScale.X - centerPoint.X, pointToScale.Y - centerPoint.Y);
+            return new Point(distance.X * k + pointToScale.X, distance.Y * k + pointToScale.Y);
+        }
+
     }
 }
