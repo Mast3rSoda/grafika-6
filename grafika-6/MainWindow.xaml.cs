@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -21,19 +22,22 @@ namespace grafika_6
     public partial class MainWindow : Window
     {
         //DOs - love me some shitty naming
-        private List<KeyValuePair<int, List<Vector>>> ?bezierCurves;
-        private List<KeyValuePair<int, List<Line>>> ?bezierLines;
-        private List<KeyValuePair<int, List<Line>>> ?curveLines;
-        private List<KeyValuePair<int, List<Ellipse>>> ?ellipseList;
-        private List<Vector> ?pointList;
-        private List<Line> ?lineList;
-        private List<Line> ?curveList;
-        private List<Ellipse> ?ellipses;
+        private List<KeyValuePair<int, List<Vector>>>? bezierCurves;
+        private List<KeyValuePair<int, List<Line>>>? bezierLines;
+        private List<KeyValuePair<int, List<Line>>>? curveLines;
+        private List<KeyValuePair<int, List<Ellipse>>>? ellipseList;
+        private List<Vector>? pointList;
+        private List<Line>? lineList;
+        private List<Line>? curveList;
+        private List<Ellipse>? ellipses;
 
         private List<KeyValuePair<int, List<Vector>>>? polygonPoints;
-        private List<Polygon>? polygonList;
+        private List<KeyValuePair<int, Polygon>>? polygonList;
+        private List<KeyValuePair<int, List<Ellipse>>>? polygonEllipseList;
         private List<Vector>? polygonPointList;
         private Polygon? polygon;
+        private PointCollection? points;
+        private List<Ellipse>? polygonEllipses;
 
         //vars
 
@@ -47,6 +51,7 @@ namespace grafika_6
 
         private readonly int ellipseRadius = 8;
         private readonly int lineThickness = 1;
+        private readonly int polygonThickness = 2;
 
         private int editPosition;
         private int key;
@@ -55,7 +60,8 @@ namespace grafika_6
         private bool found = false;
 
         //brushes
-        SolidColorBrush ellipseBrush, lineBrush, curveBrush;
+        SolidColorBrush ellipseBrush, lineBrush, curveBrush, polyBrush;
+
 
         public MainWindow()
         {
@@ -63,25 +69,30 @@ namespace grafika_6
             ellipseBrush = new();
             lineBrush = new();
             curveBrush = new();
+            polyBrush = new();
             bezierCurves = new();
             bezierLines = new();
             curveLines = new();
             ellipseList = new();
-            polygonPoints= new();
+            polygonPoints = new();
             polygonList = new();
+            polygonEllipseList = new();
             ellipseBrush.Color = Colors.Blue;
             lineBrush.Color = Colors.Red;
             curveBrush.Color = Colors.Green;
+            polyBrush.Color = Colors.Purple;
         }
 
         private void Bezier_Click(object sender, RoutedEventArgs e)
         {
             mode = 0;
+            bezMode = 0;
         }
 
         private void D_Click(object sender, RoutedEventArgs e)
         {
             mode = 1;
+            polyMode = 0;
         }
 
         private void cnv_MouseDown(object sender, MouseButtonEventArgs e)
@@ -97,7 +108,7 @@ namespace grafika_6
 
                     if (lineList == null)
                         lineList = new List<Line>();
-                    
+
                     if (curveList == null)
                         curveList = new List<Line>();
                     if (ellipses == null)
@@ -162,7 +173,7 @@ namespace grafika_6
                         {
                             if (Math.Abs(point.X - vector.X) < ellipseRadius / 2 && Math.Abs(point.Y - vector.Y) < ellipseRadius / 2)
                             {
-                                found= true;
+                                found = true;
                                 editPosition = i;
                                 key = list.Key;
                                 mouseStartPosition = point;
@@ -184,11 +195,31 @@ namespace grafika_6
                     if (polygonPointList == null)
                         polygonPointList = new List<Vector>();
 
+                    if (polygonEllipses == null)
+                        polygonEllipses = new List<Ellipse>();
+
+                    if (points == null)
+                        points = new PointCollection();
+
                     if (polygon == null)
+                    {
                         polygon = new Polygon();
+                        polygon.Fill = polyBrush;
+                        polygon.Stroke = Brushes.Black;
+                        polygon.StrokeThickness = polygonThickness;
+                    }
 
                     Vector point = new(Math.Round(e.GetPosition(cnv).X), Math.Round(e.GetPosition(cnv).Y));
                     polygonPointList.Add(point);
+                    points.Add(new Point(point.X, point.Y));
+
+                    if (polygonPointList.Count > 2)
+                    {
+                        polygon.Points = points;
+                        if (cnv.Children.Contains(polygon))
+                            cnv.Children.Remove(polygon);
+                        cnv.Children.Add(polygon);
+                    }
 
                 }
             }
@@ -218,72 +249,85 @@ namespace grafika_6
             }
             else if (mode == 1)
             {
-                polygonList= new List<Polygon>();
                 polygon = new Polygon();
+                polygon.Fill = polyBrush;
+                polygon.Stroke = Brushes.Black;
+                polygon.StrokeThickness = polygonThickness;
+                polygonEllipses = new List<Ellipse>();
+                points = new PointCollection();
+                polygonPointList = new List<Vector>();
+                polyMode = 0;
             }
         }
 
         private void cnv_MouseMove(object sender, MouseEventArgs e)
         {
-            if (bezMode != 1 || !found) return;
-
-            Vector point = new(Math.Round(e.GetPosition(cnv).X), Math.Round(e.GetPosition(cnv).Y));
-            Vector difference = Vector.Subtract(point, mouseStartPosition);
-            
-
-
-            if (Math.Abs(difference.X) > 0 || Math.Abs(difference.Y) > 0)
+            if (mode == 0)
             {
-                //change point list
-                bezierCurves[key].Value[editPosition] = point;
+                if (bezMode != 1 || !found) return;
 
-                //change ellipse position
-                Ellipse ellipse = ellipseList[key].Value[editPosition];
-                cnv.Children.Remove(ellipse);
-                Canvas.SetTop(ellipse, point.Y - ellipseRadius / 2);
-                Canvas.SetLeft(ellipse, point.X - ellipseRadius / 2);
-                cnv.Children.Add(ellipse);
-                ellipseList[key].Value[editPosition] = ellipse;
+                Vector point = new(Math.Round(e.GetPosition(cnv).X), Math.Round(e.GetPosition(cnv).Y));
+                Vector difference = Vector.Subtract(point, mouseStartPosition);
 
-                //change line position
-                if (editPosition != 0)
+
+
+                if (Math.Abs(difference.X) > 0 || Math.Abs(difference.Y) > 0)
                 {
-                    Line line = bezierLines[key].Value[editPosition - 1];
-                    cnv.Children.Remove(line);
-                    line.X2 = point.X;
-                    line.Y2 = point.Y;
-                    cnv.Children.Add(line);
-                    bezierLines[key].Value[editPosition - 1] = line;
-                }
-                if (editPosition < bezierLines[key].Value.Count)
-                {
-                    Line line = bezierLines[key].Value[editPosition];
-                    cnv.Children.Remove(line);
-                    line.X1 = point.X;
-                    line.Y1 = point.Y;
-                    cnv.Children.Add(line);
-                    bezierLines[key].Value[editPosition] = line;
-                }
+                    //change point list
+                    bezierCurves[key].Value[editPosition] = point;
 
-                //change bezier curve
-                List<Vector> bezCurvePoints = Algorithm.Bezier(bezierCurves[key].Value);
-                
+                    //change ellipse position
+                    Ellipse ellipse = ellipseList[key].Value[editPosition];
+                    cnv.Children.Remove(ellipse);
+                    Canvas.SetTop(ellipse, point.Y - ellipseRadius / 2);
+                    Canvas.SetLeft(ellipse, point.X - ellipseRadius / 2);
+                    cnv.Children.Add(ellipse);
+                    ellipseList[key].Value[editPosition] = ellipse;
+
+                    //change line position
+                    if (editPosition != 0)
+                    {
+                        Line line = bezierLines[key].Value[editPosition - 1];
+                        cnv.Children.Remove(line);
+                        line.X2 = point.X;
+                        line.Y2 = point.Y;
+                        cnv.Children.Add(line);
+                        bezierLines[key].Value[editPosition - 1] = line;
+                    }
+                    if (editPosition < bezierLines[key].Value.Count)
+                    {
+                        Line line = bezierLines[key].Value[editPosition];
+                        cnv.Children.Remove(line);
+                        line.X1 = point.X;
+                        line.Y1 = point.Y;
+                        cnv.Children.Add(line);
+                        bezierLines[key].Value[editPosition] = line;
+                    }
+
+                    //change bezier curve
+                    List<Vector> bezCurvePoints = Algorithm.Bezier(bezierCurves[key].Value);
+
                     for (int i = 0; i < curveLines[key].Value.Count; i++)
                         cnv.Children.Remove(curveLines[key].Value[i]);
                     curveLines[key].Value.Clear();
 
-                for (int i = 0; i < bezCurvePoints.Count - 1; i++)
-                {
-                    Line l = new Line();
-                    l.StrokeThickness = lineThickness;
-                    l.Stroke = curveBrush;
-                    l.X1 = bezCurvePoints[i].X;
-                    l.Y1 = bezCurvePoints[i].Y;
-                    l.X2 = bezCurvePoints[i + 1].X;
-                    l.Y2 = bezCurvePoints[i + 1].Y;
-                    cnv.Children.Add(l);
-                    curveLines[key].Value.Add(l);
+                    for (int i = 0; i < bezCurvePoints.Count - 1; i++)
+                    {
+                        Line l = new Line();
+                        l.StrokeThickness = lineThickness;
+                        l.Stroke = curveBrush;
+                        l.X1 = bezCurvePoints[i].X;
+                        l.Y1 = bezCurvePoints[i].Y;
+                        l.X2 = bezCurvePoints[i + 1].X;
+                        l.Y2 = bezCurvePoints[i + 1].Y;
+                        cnv.Children.Add(l);
+                        curveLines[key].Value.Add(l);
+                    }
                 }
+            }
+            if (mode == 1)
+            {
+
             }
 
         }
@@ -319,7 +363,18 @@ namespace grafika_6
             }
             else if (mode == 1)
             {
+                if (polygonPointList == null || polygon == null || points == null || polygonEllipses == null) return;
 
+                if (polygonPointList.Count > 2)
+                {
+                    int count = polygonPointList.Count;
+                    polygonPoints.Add(new KeyValuePair<int, List<Vector>>(count, polygonPointList));
+                    polygonList.Add(new KeyValuePair<int, Polygon>(count, polygon));
+                    polygonEllipseList.Add(new KeyValuePair<int, List<Ellipse>>(count, polygonEllipses));
+                    polyMode = 4;
+                    return;
+                }
+                MessageBox.Show("Not enough points!");
             }
         }
     }

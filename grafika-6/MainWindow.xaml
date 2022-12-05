@@ -31,6 +31,9 @@
             <StackPanel Grid.Column="1">
                 <Button Name="bezDraw" Content="Draw" Click="bezDraw_Click"/>
                 <Button Name="bezEdit" Content="Edit" Click="bezEdit_Click"/>
+                <Button Name="polyScale" Content="Scale" Click="polyScale_Click"/>
+                <Button Name="polyMove" Content="Move" Click="polyMove_Click"/>
+                <Button Name="polyRotate" Content="Rotate" Click="polyRotate_Click"/>
                 <Button Name="bezDone" Content="Done" Click="bezDone_Click"/>
             </StackPanel>
         </Grid>

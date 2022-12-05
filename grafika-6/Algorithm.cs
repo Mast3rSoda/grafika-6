@@ -35,7 +35,7 @@ namespace grafika_6
             }
 
             //boze ale mi sie nie chce
-            for (double i = 0; i <= 1; i += 0.005)
+            for (double i = 0; i <= 1; i += 0.01)
             {
                 int xSum = 0, ySum = 0;
                 for (int y = 0; y < pointList.Count; y++)
