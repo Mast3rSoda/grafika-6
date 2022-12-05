@@ -332,6 +332,21 @@ namespace grafika_6
 
         }
 
+        private void polyRotate_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void polyMove_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void polyScale_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         private void cnv_MouseUp(object sender, MouseButtonEventArgs e)
         {
             found = false;
