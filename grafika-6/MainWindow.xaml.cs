@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -353,12 +355,175 @@ namespace grafika_6
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
+            if (bezierCurves == null && polygonPoints == null) return;
+            string folderName = @".\SaveFiles\";
+            if (!Directory.Exists(folderName))
+                Directory.CreateDirectory(folderName);
 
+            string fileName = System.IO.Path.GetRandomFileName();
+            string fullPath = folderName + fileName + ".xd1";
+            if (!File.Exists(fullPath))
+            {
+                using (StreamWriter sw = new StreamWriter(fullPath))
+                {
+                    if (bezierCurves != null)
+                        foreach (var value in bezierCurves)
+                        {
+                            sw.Write(value.Key);
+                            foreach (var vector in value.Value)
+                            {
+                                sw.Write(" " + vector.X.ToString() + "," + vector.Y.ToString());
+                            }
+                            sw.Write('\n');
+                        }
+                    if (polygonPoints != null)
+                    {
+                        sw.WriteLine("xd");
+                        foreach (var value in polygonPoints)
+                        {
+                            sw.Write(value.Key);
+                            foreach (var vector in value.Value)
+                            {
+                                sw.Write(" " + vector.X.ToString() + "," + vector.Y.ToString());
+                            }
+                            sw.Write('\n');
+                        }
+                    }
+                }
+            }
         }
 
         private void Load_Click(object sender, RoutedEventArgs e)
         {
+            if (bezierCurves == null && polygonPoints == null)
+            {
+                bezierCurves = new();
+                polygonPoints = new();
+            }
+            OpenFileDialog ofd = new OpenFileDialog();
 
+            ofd.Filter = "Database files (*.xd1)|*.xd1";
+            ofd.FilterIndex = 0;
+            ofd.RestoreDirectory = true;
+            if (ofd.ShowDialog() != true) return;
+
+            string selectedFileName = ofd.FileName;
+            using (StreamReader sr = new StreamReader(selectedFileName))
+            {
+                string? line = sr.ReadLine();
+                while (line != "xd")
+                {
+                    string[] values = line.Split(' ');
+
+                    List<Vector> v = new();
+                    for (int i = 1; i < values.Length; i++)
+                        v.Add(Vector.Parse(values[i]));
+
+                    if (lineList == null)
+                        lineList = new List<Line>();
+                    else
+                        lineList.Clear();
+
+                    if (curveList == null)
+                        curveList = new List<Line>();
+                    else
+                        curveList.Clear();
+
+                    if (ellipses == null)
+                        ellipses = new List<Ellipse>();
+                    else
+                        ellipses.Clear();
+
+                    for (int i = 0; i < v.Count; i++)
+                    {
+                        Ellipse ellipse = new Ellipse();
+                        ellipse.Width = ellipse.Height = ellipseRadius;
+                        ellipse.Stroke = ellipseBrush;
+                        Canvas.SetTop(ellipse, v[i].Y - ellipseRadius / 2);
+                        Canvas.SetLeft(ellipse, v[i].X - ellipseRadius / 2);
+                        cnv.Children.Add(ellipse);
+                        ellipses.Add(ellipse);
+
+                        if (i > 0)
+                        {
+                            //if more than 1 point draw a line
+                            Line l = new Line();
+                            l.StrokeThickness = lineThickness;
+                            l.Stroke = lineBrush;
+                            l.X1 = v[i - 1].X;
+                            l.Y1 = v[i - 1].Y;
+                            l.X2 = v[i].X;
+                            l.Y2 = v[i].Y;
+                            lineList.Add(l);
+                            cnv.Children.Add(l);
+                        }
+                    }
+                    List<Vector> bezCurvePoints = Algorithm.Bezier(v);
+
+                    for (int i = 0; i < bezCurvePoints.Count - 1; i++)
+                    {
+                        Line l = new Line();
+                        l.StrokeThickness = lineThickness;
+                        l.Stroke = curveBrush;
+                        l.X1 = bezCurvePoints[i].X;
+                        l.Y1 = bezCurvePoints[i].Y;
+                        l.X2 = bezCurvePoints[i + 1].X;
+                        l.Y2 = bezCurvePoints[i + 1].Y;
+                        cnv.Children.Add(l);
+                        curveList.Add(l);
+                    }
+
+                    int c = bezierCurves.Count;
+                    bezierLines.Add(new KeyValuePair<int, List<Line>>(c, lineList));
+                    curveLines.Add(new KeyValuePair<int, List<Line>>(c, curveList));
+                    ellipseList.Add(new KeyValuePair<int, List<Ellipse>>(c, ellipses));
+                    bezierCurves.Add(new KeyValuePair<int, List<Vector>>(c, v));
+                    line = sr.ReadLine();
+                }
+                line = sr.ReadLine();
+                while (line != null)
+                {
+                    string[] values = line.Split(' ');
+
+                    List<Vector> v = new();
+                    for (int i = 1; i < values.Length; i++)
+                        v.Add(Vector.Parse(values[i]));
+
+                    polygon = new Polygon();
+                    polygon.Fill = polyBrush;
+                    polygon.Stroke = Brushes.Black;
+                    polygon.StrokeThickness = polygonThickness;
+
+                    points = new PointCollection();
+
+                    if (polygonEllipses == null)
+                        polygonEllipses = new List<Ellipse>();
+                    else
+                        polygonEllipses.Clear();
+
+                    for (int i = 0; i < v.Count; i++)
+                    {
+                        Ellipse ellipse = new Ellipse();
+                        ellipse.Width = ellipse.Height = ellipseRadius;
+                        ellipse.Stroke = ellipseBrush;
+                        Canvas.SetTop(ellipse, v[i].Y - ellipseRadius / 2);
+                        Canvas.SetLeft(ellipse, v[i].X - ellipseRadius / 2);
+                        cnv.Children.Add(ellipse);
+                        polygonEllipses.Add(ellipse);
+
+                        points.Add(new Point(v[i].X, v[i].Y));
+                    }
+                    polygon.Points = points;
+                    cnv.Children.Add(polygon);
+
+                    int c = polygonPoints.Count;
+                    polygonList.Add(new KeyValuePair<int, Polygon>(c, polygon));
+                    polygonEllipseList.Add(new KeyValuePair<int, List<Ellipse>>(c, polygonEllipses));
+                    polygonPoints.Add(new KeyValuePair<int, List<Vector>>(c, v));
+
+                    line = sr.ReadLine();
+                }
+            }
         }
 
         private void bezDraw_Click(object sender, RoutedEventArgs e)
@@ -453,7 +618,7 @@ namespace grafika_6
                             Canvas.SetTop(ellipseList[key].Value[i], v.Y - ellipseRadius / 2);
                         }
 
-                        for(int i = 0; i < bezierLines[key].Value.Count; i++)
+                        for (int i = 0; i < bezierLines[key].Value.Count; i++)
                         {
                             bezierLines[key].Value[i].X1 = bezierCurves[key].Value[i].X;
                             bezierLines[key].Value[i].Y1 = bezierCurves[key].Value[i].Y;
